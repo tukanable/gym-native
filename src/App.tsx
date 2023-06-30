@@ -1,42 +1,40 @@
 import React from 'react';
-import { Button, SafeAreaView, ScrollView, StatusBar, Text, useColorScheme, View } from 'react-native';
+import { FlatList, Button, SafeAreaView, ScrollView, StatusBar, Text, useColorScheme, View } from 'react-native';
 import { Colors } from 'react-native/Libraries/NewAppScreen';
 
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
+import { parseISO, format } from 'date-fns';
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { gql } from 'urql';
 import { Provider, Client, fetchExchange } from 'urql';
-import { offlineExchange } from '@urql/exchange-graphcache';
-import { makeAsyncStorage } from '@urql/storage-rn';
-import schema from './generated/graphql.schema.json';
+// import { offlineExchange } from '@urql/exchange-graphcache';
+// import { makeAsyncStorage } from '@urql/storage-rn';
+// import schema from './generated/graphql.schema.json';
 import { useAppQuery, useProgramQuery, useDayQuery } from './App.generated';
 
-const storage = makeAsyncStorage({
-  dataKey: 'graphcache-data',
-  metadataKey: 'graphcache-metadata',
-  maxAge: 9999999,
-});
-
-const cache = offlineExchange({
-  schema,
-  storage,
-  isOfflineError(error, _result) {
-    console.log(error);
-    return !!error?.networkError;
-  },
-});
+// const storage = makeAsyncStorage({
+//   dataKey: 'graphcache-data',
+//   metadataKey: 'graphcache-metadata',
+//   maxAge: 9999999,
+// });
+//
+// const cache = offlineExchange({
+//   schema,
+//   storage,
+//   isOfflineError(error, _result) {
+//     console.log(error);
+//     return !!error?.networkError;
+//   },
+// });
 
 const client = new Client({
   url: 'http://localhost:4000/',
-  exchanges: [cache, fetchExchange],
+  exchanges: [
+    // cache,
+    fetchExchange,
+  ],
 });
-
-setTimeout(() => {
-  AsyncStorage.getItem('graphcache-data').then((value) => console.log('data', value));
-  AsyncStorage.getItem('graphcache-metadata').then((value) => console.log('metadata', value));
-}, 3000);
 
 gql`
   query App {
@@ -71,6 +69,13 @@ gql`
         exercise {
           id
           name
+        }
+
+        sets {
+          id
+          moment
+          weight
+          count
         }
       }
     }
@@ -155,6 +160,22 @@ function ProgramScreen({ navigation, route }: NativeStackScreenProps<RootStackPa
   );
 }
 
+const groupByMomentDate = <T extends { moment: string }>(rows: ReadonlyArray<T>) => {
+  const res: { [key: string]: T[] } = {};
+
+  for (let row of rows) {
+    const date = format(parseISO(row.moment), 'dd/LL');
+
+    if (!res[date]) {
+      res[date] = [];
+    }
+
+    res[date].push(row);
+  }
+
+  return res;
+};
+
 function DayScreen({ route }: NativeStackScreenProps<RootStackParamList, 'Day'>) {
   const [res] = useDayQuery({
     variables: { id: route.params.id },
@@ -183,9 +204,31 @@ function DayScreen({ route }: NativeStackScreenProps<RootStackParamList, 'Day'>)
       <ScrollView contentInsetAdjustmentBehavior="automatic">
         <View>
           <Text>{day.name}</Text>
-          {day.steps.map((s) => (
-            <Text key={s.id}>{s.exercise.name}</Text>
-          ))}
+          {day.steps.map((s) => {
+            const setColumns = groupByMomentDate(s.sets);
+
+            return (
+              <View key={s.id}>
+                <Text>{s.exercise.name}</Text>
+                <FlatList
+                  horizontal
+                  extraData={s.sets}
+                  data={Object.keys(setColumns)}
+                  keyExtractor={(x) => x}
+                  renderItem={({ item }) => (
+                    <View style={{ borderRightWidth: 1, padding: 10 }}>
+                      <Text>{item}</Text>
+                      {setColumns[item].map((set) => (
+                        <View key={set.id}>
+                          <Text>{`${set.count} (${set.weight})`}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                />
+              </View>
+            );
+          })}
         </View>
       </ScrollView>
     </SafeAreaView>

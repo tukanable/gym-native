@@ -65,7 +65,7 @@ const sets = [];
 const dayCount = 10;
 
 for (let day = 0; day < dayCount; day++) {
-  for (let setIdx = 0; setIdx < 10; setIdx++) {
+  for (let setIdx = 0; setIdx < 3; setIdx++) {
     sets.push({
       id: nextId++,
       moment: formatISO(addDays(new Date(), dayCount - day)),
