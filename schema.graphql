@@ -1,0 +1,50 @@
+type Program {
+  id: Int!
+  name: String!
+  days: [Day!]!
+}
+
+type Day {
+  id: Int!
+  name: String!
+  steps: [Step!]!
+}
+
+type Step {
+  id: Int!
+  exercise: Exercise!
+}
+
+type Exercise {
+  id: Int!
+  name: String!
+}
+
+type Viewer {
+  programs: [Program!]!
+}
+
+type Query {
+  viewer: Viewer!
+  program(id: Int!): Program
+  day(id: Int!): Day
+  exercises: [Exercise!]!
+}
+
+type ErrorPayload {
+  message: String!
+}
+
+type CreateProgramPayload {
+  program: Program!
+}
+
+union CreateProgramOrErrorPayload = CreateProgramPayload | ErrorPayload
+
+input CreateProgramInput {
+  name: String!
+}
+
+type Mutation {
+  createProgram(input: CreateProgramInput): CreateProgramOrErrorPayload!
+}

@@ -3,5 +3,8 @@
     "airbnb",
     "airbnb-typescript",
     "plugin:prettier/recommended"
-  ]
+  ],
+  "rules": {
+    "react-native/no-inline-styles": 0
+  }
 }
