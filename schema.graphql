@@ -1,7 +1,16 @@
+scalar Time
+
 type Program {
   id: Int!
   name: String!
   days: [Day!]!
+}
+
+type Set {
+  id: Int!
+  moment: Time!
+  weight: Float!
+  count: Int!
 }
 
 type Day {
@@ -13,6 +22,7 @@ type Day {
 type Step {
   id: Int!
   exercise: Exercise!
+  sets: [Set!]!
 }
 
 type Exercise {
