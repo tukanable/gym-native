@@ -1,13 +1,12 @@
 import React from 'react';
-import { FlatList, Button, SafeAreaView, ScrollView, StatusBar, Text, useColorScheme, View } from 'react-native';
+import { FlatList, Button, SafeAreaView, ScrollView, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Colors } from 'react-native/Libraries/NewAppScreen';
 
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { parseISO, format } from 'date-fns';
 
-import { gql } from 'urql';
+import { gql, UseQueryState } from 'urql';
 import { Provider, Client, fetchExchange } from 'urql';
 // import { offlineExchange } from '@urql/exchange-graphcache';
 // import { makeAsyncStorage } from '@urql/storage-rn';
@@ -90,36 +89,35 @@ type RootStackParamList = {
   Training: { dayId: number };
 };
 
-function HomeScreen({ navigation }: NativeStackScreenProps<RootStackParamList, 'Home'>): JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
-
-  const [res] = useAppQuery();
-
+function getLoadHookView<Data>(res: UseQueryState<Data>): [NonNullable<Data>, null] | [null, JSX.Element] {
   if (res.fetching) {
-    return <Text>Fetching...</Text>;
+    return [null, <Text>Fetching...</Text>];
   }
 
   if (res.error) {
-    return <Text>{res.error.toString()}</Text>;
+    return [null, <Text>{res.error.toString()}</Text>];
   }
 
   if (!res.data) {
-    return <Text>Data not found</Text>;
+    return [null, <Text>Data not found</Text>];
+  }
+
+  return [res.data, null];
+}
+
+function HomeScreen({ navigation }: NativeStackScreenProps<RootStackParamList, 'Home'>): JSX.Element {
+  const [res] = useAppQuery();
+  const [data, loadView] = getLoadHookView(res);
+
+  if (loadView) {
+    return loadView;
   }
 
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView contentInsetAdjustmentBehavior="automatic" style={backgroundStyle}>
+    <SafeAreaView>
+      <ScrollView contentInsetAdjustmentBehavior="automatic">
         <View>
-          {res.data.viewer.programs.map((p) => (
+          {data.viewer.programs.map((p) => (
             <Button key={p.name} title={p.name} onPress={() => navigation.navigate('Program', { id: p.id })} />
           ))}
         </View>
@@ -129,23 +127,17 @@ function HomeScreen({ navigation }: NativeStackScreenProps<RootStackParamList, '
 }
 
 function ProgramScreen({ navigation, route }: NativeStackScreenProps<RootStackParamList, 'Program'>) {
-  const [res] = useProgramQuery({
-    variables: { id: route.params.id },
-  });
+  const variables = { id: route.params.id };
+  const [res] = useProgramQuery({ variables });
+  const [data, loadView] = getLoadHookView(res);
 
-  if (res.fetching) {
-    return <Text>Fetching...</Text>;
+  if (loadView) {
+    return loadView;
   }
 
-  if (res.error) {
-    return <Text>{res.error.toString()}</Text>;
-  }
+  const { program } = data;
 
-  if (!res.data) {
-    return <Text>Data not found</Text>;
-  }
-
-  if (!res.data.program) {
+  if (!program) {
     return <Text>Program not found</Text>;
   }
 
@@ -153,7 +145,7 @@ function ProgramScreen({ navigation, route }: NativeStackScreenProps<RootStackPa
     <SafeAreaView>
       <ScrollView contentInsetAdjustmentBehavior="automatic">
         <View>
-          {res.data.program.days.map((d) => (
+          {program.days.map((d) => (
             <Button key={d.name} title={d.name} onPress={() => navigation.navigate('Day', { id: d.id })} />
           ))}
         </View>
@@ -179,27 +171,19 @@ const groupByMomentDate = <T extends { moment: string }>(rows: ReadonlyArray<T>)
 };
 
 function DayScreen({ route, navigation }: NativeStackScreenProps<RootStackParamList, 'Day'>) {
-  const [res] = useDayQuery({
-    variables: { id: route.params.id },
-  });
+  const variables = { id: route.params.id };
+  const [res] = useDayQuery({ variables });
+  const [data, loadView] = getLoadHookView(res);
 
-  if (res.fetching) {
-    return <Text>Fetching...</Text>;
+  if (loadView) {
+    return loadView;
   }
 
-  if (res.error) {
-    return <Text>{res.error.toString()}</Text>;
-  }
+  const { day } = data;
 
-  if (!res.data) {
-    return <Text>Data not found</Text>;
-  }
-
-  if (!res.data.day) {
+  if (!day) {
     return <Text>Day not found</Text>;
   }
-
-  const { day } = res.data;
 
   return (
     <SafeAreaView>
@@ -239,27 +223,19 @@ function DayScreen({ route, navigation }: NativeStackScreenProps<RootStackParamL
 }
 
 function TrainingScreen({ route }: NativeStackScreenProps<RootStackParamList, 'Training'>) {
-  const [res] = useDayQuery({
-    variables: { id: route.params.dayId },
-  });
+  const variables = { id: route.params.dayId };
+  const [res] = useDayQuery({ variables });
+  const [data, loadView] = getLoadHookView(res);
 
-  if (res.fetching) {
-    return <Text>Fetching...</Text>;
+  if (loadView) {
+    return loadView;
   }
 
-  if (res.error) {
-    return <Text>{res.error.toString()}</Text>;
-  }
+  const { day } = data;
 
-  if (!res.data) {
-    return <Text>Data not found</Text>;
-  }
-
-  if (!res.data.day) {
+  if (!day) {
     return <Text>Day not found</Text>;
   }
-
-  const { day } = res.data;
 
   const currentStep = day.steps[0];
 
