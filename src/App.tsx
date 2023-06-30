@@ -1,5 +1,6 @@
 import React from 'react';
 import { FlatList, Button, SafeAreaView, ScrollView, StatusBar, Text, useColorScheme, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Colors } from 'react-native/Libraries/NewAppScreen';
 
 import { NavigationContainer } from '@react-navigation/native';
@@ -282,14 +283,16 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 function App() {
   return (
     <Provider value={client}>
-      <NavigationContainer>
-        <Stack.Navigator>
-          <Stack.Screen name="Home" component={HomeScreen} />
-          <Stack.Screen name="Program" component={ProgramScreen} />
-          <Stack.Screen name="Day" component={DayScreen} />
-          <Stack.Screen name="Training" component={TrainingScreen} />
-        </Stack.Navigator>
-      </NavigationContainer>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <NavigationContainer>
+          <Stack.Navigator>
+            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="Program" component={ProgramScreen} />
+            <Stack.Screen name="Day" component={DayScreen} />
+            <Stack.Screen name="Training" component={TrainingScreen} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </GestureHandlerRootView>
     </Provider>
   );
 }
