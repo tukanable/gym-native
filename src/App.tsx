@@ -86,6 +86,7 @@ type RootStackParamList = {
   Home: undefined;
   Program: { id: number };
   Day: { id: number };
+  Training: { dayId: number };
 };
 
 function HomeScreen({ navigation }: NativeStackScreenProps<RootStackParamList, 'Home'>): JSX.Element {
@@ -176,7 +177,7 @@ const groupByMomentDate = <T extends { moment: string }>(rows: ReadonlyArray<T>)
   return res;
 };
 
-function DayScreen({ route }: NativeStackScreenProps<RootStackParamList, 'Day'>) {
+function DayScreen({ route, navigation }: NativeStackScreenProps<RootStackParamList, 'Day'>) {
   const [res] = useDayQuery({
     variables: { id: route.params.id },
   });
@@ -229,6 +230,47 @@ function DayScreen({ route }: NativeStackScreenProps<RootStackParamList, 'Day'>)
               </View>
             );
           })}
+          <Button title="Start training" onPress={() => navigation.navigate('Training', { dayId: day.id })} />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function TrainingScreen({ route }: NativeStackScreenProps<RootStackParamList, 'Training'>) {
+  const [res] = useDayQuery({
+    variables: { id: route.params.dayId },
+  });
+
+  if (res.fetching) {
+    return <Text>Fetching...</Text>;
+  }
+
+  if (res.error) {
+    return <Text>{res.error.toString()}</Text>;
+  }
+
+  if (!res.data) {
+    return <Text>Data not found</Text>;
+  }
+
+  if (!res.data.day) {
+    return <Text>Day not found</Text>;
+  }
+
+  const { day } = res.data;
+
+  const currentStep = day.steps[0];
+
+  if (!currentStep) {
+    return <Text>Nothing to show</Text>;
+  }
+
+  return (
+    <SafeAreaView>
+      <ScrollView contentInsetAdjustmentBehavior="automatic">
+        <View>
+          <Text>Traning {currentStep.exercise.name}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -245,6 +287,7 @@ function App() {
           <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen name="Program" component={ProgramScreen} />
           <Stack.Screen name="Day" component={DayScreen} />
+          <Stack.Screen name="Training" component={TrainingScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </Provider>

@@ -62,7 +62,7 @@ const programs = [
 ];
 
 const sets = [];
-const dayCount = 10;
+const dayCount = parseInt(process.env.DAY_COUNT || 10, 10);
 
 for (let day = 0; day < dayCount; day++) {
   for (let setIdx = 0; setIdx < 3; setIdx++) {
