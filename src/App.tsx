@@ -12,6 +12,7 @@ import { Provider, Client, fetchExchange } from 'urql';
 // import { makeAsyncStorage } from '@urql/storage-rn';
 // import schema from './generated/graphql.schema.json';
 import { useAppQuery, useProgramQuery, useDayQuery } from './App.generated';
+import { localFetch } from './localServer';
 
 // const storage = makeAsyncStorage({
 //   dataKey: 'graphcache-data',
@@ -30,6 +31,7 @@ import { useAppQuery, useProgramQuery, useDayQuery } from './App.generated';
 
 const client = new Client({
   url: 'http://localhost:4000/',
+  fetch: localFetch,
   exchanges: [
     // cache,
     fetchExchange,

@@ -1,9 +1,9 @@
-import { ApolloServer } from '@apollo/server';
+import { buildSchema, graphql } from 'graphql';
 import { formatISO, addDays } from 'date-fns';
-import { startStandaloneServer } from '@apollo/server/standalone';
-import * as fs from 'fs';
+import { makeExecutableSchema } from '@graphql-tools/schema';
+import schemaSource from './generated/schema';
 
-const typeDefs = fs.readFileSync('../schema.graphql').toString();
+const schema = buildSchema(schemaSource);
 
 let nextId = 1;
 
@@ -61,8 +61,15 @@ const programs = [
   },
 ];
 
-const sets = [];
-const dayCount = parseInt(process.env.DAY_COUNT || 10, 10);
+type Set = {
+  id: number;
+  moment: string;
+  weight: number;
+  count: number;
+};
+
+const sets: Set[] = [];
+const dayCount = 3;
 
 for (let day = 0; day < dayCount; day++) {
   for (let setIdx = 0; setIdx < 3; setIdx++) {
@@ -75,7 +82,7 @@ for (let day = 0; day < dayCount; day++) {
   }
 }
 
-const resolvers = {
+const resolvers: any = {
   Step: {
     sets: () => sets,
   },
@@ -84,8 +91,8 @@ const resolvers = {
   },
   Query: {
     viewer: () => ({}),
-    program: (parent, { id }) => programs.find((p) => p.id === id),
-    day: (parent, { id }) => {
+    program: (parent: any, { id }: any) => programs.find((p) => p.id === id),
+    day: (parent: any, { id }: any) => {
       for (let program of programs) {
         for (let day of program.days) {
           if (day.id === id) {
@@ -99,19 +106,30 @@ const resolvers = {
   },
 };
 
-// The ApolloServer constructor requires two parameters: your schema
-// definition and your set of resolvers.
-const server = new ApolloServer({
-  typeDefs,
+const executableSchema = makeExecutableSchema({
+  typeDefs: schema,
   resolvers,
 });
 
-// Passing an ApolloServer instance to the `startStandaloneServer` function:
-//  1. creates an Express app
-//  2. installs your ApolloServer instance as middleware
-//  3. prepares your app to handle incoming requests
-const { url } = await startStandaloneServer(server, {
-  listen: { port: 4000 },
-});
+export const localFetch: any = async (url: any, options: any) => {
+  const { query, variables } = JSON.parse(options.body);
 
-console.log(`🚀  Server ready at: ${url}`);
+  const res = await graphql({
+    schema: executableSchema,
+    source: query,
+    variableValues: variables,
+  });
+
+  return {
+    headers: {
+      get: (name: string) => {
+        if (name === 'Content-Type') {
+          return 'application/json';
+        }
+
+        throw new Error(`unexpected name: ${name}`);
+      },
+    },
+    text: () => JSON.stringify(res),
+  };
+};
