@@ -1,5 +1,5 @@
 import React from 'react';
-import { FlatList, Button, SafeAreaView, ScrollView, Text, View } from 'react-native';
+import { FlatList, Button, SafeAreaView, ScrollView, Text, View, ActivityIndicator } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { NavigationContainer } from '@react-navigation/native';
@@ -13,6 +13,7 @@ import { Provider, Client, fetchExchange } from 'urql';
 // import schema from './generated/graphql.schema.json';
 import { useAppQuery, useProgramQuery, useDayQuery } from './App.generated';
 import { localFetch } from './localServer';
+import { useNavigationState } from './hooks/useNavigationState';
 
 // const storage = makeAsyncStorage({
 //   dataKey: 'graphcache-data',
@@ -259,10 +260,16 @@ function TrainingScreen({ route }: NativeStackScreenProps<RootStackParamList, 'T
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function App() {
+  const [initialState, handleStateChange, isReady] = useNavigationState('NAVIGATION_STATE_V1');
+
+  if (!isReady) {
+    return <ActivityIndicator />;
+  }
+
   return (
     <Provider value={client}>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <NavigationContainer>
+        <NavigationContainer initialState={initialState} onStateChange={handleStateChange}>
           <Stack.Navigator>
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="Program" component={ProgramScreen} />
